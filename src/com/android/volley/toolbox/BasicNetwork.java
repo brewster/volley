@@ -86,6 +86,9 @@ public class BasicNetwork implements Network {
             HttpResponse httpResponse = null;
             byte[] responseContents = null;
             Map<String, String> responseHeaders = new HashMap<String, String>();
+            if (request.getCacheEntry() != null) {
+                responseHeaders.putAll(request.getCacheEntry().responseHeaders);
+            }
             try {
                 // Gather headers.
                 Map<String, String> headers = new HashMap<String, String>();
@@ -94,7 +97,8 @@ public class BasicNetwork implements Network {
                 StatusLine statusLine = httpResponse.getStatusLine();
                 int statusCode = statusLine.getStatusCode();
 
-                responseHeaders = convertHeaders(httpResponse.getAllHeaders());
+                responseHeaders.putAll(convertHeaders(httpResponse.getAllHeaders()));
+
                 // Handle cache validation.
                 if (statusCode == HttpStatus.SC_NOT_MODIFIED) {
                     return new NetworkResponse(HttpStatus.SC_NOT_MODIFIED,
