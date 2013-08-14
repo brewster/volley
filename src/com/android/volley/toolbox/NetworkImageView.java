@@ -119,7 +119,11 @@ public class NetworkImageView extends ImageView {
                 mImageContainer.cancelRequest();
                 mImageContainer = null;
             }
-            setImageBitmap(null);
+            if (mDefaultImageId > 0) {
+                setImageResource(mDefaultImageId);
+            } else {
+                setImageBitmap(null);
+            }
             return;
         }
 
