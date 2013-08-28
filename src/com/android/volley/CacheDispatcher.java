@@ -136,6 +136,10 @@ public class CacheDispatcher extends Thread {
                     // Mark the response as intermediate.
                     response.intermediate = true;
 
+                    if (mCacheListener.avoidCache(entry, request)) {
+                        mCacheListener.prepareAvoidCache(request);
+                    }
+
                     // Post the intermediate response back to the user and have
                     // the delivery then forward the request along to the network.
                     mDelivery.postResponse(request, response, new Runnable() {
@@ -173,6 +177,9 @@ public class CacheDispatcher extends Thread {
     public static interface CacheListener {
         public boolean isExpired(Cache.Entry entry, Request request);
         public boolean refreshNeeded(Cache.Entry entry, Request request);
+        public boolean avoidCache(Cache.Entry entry, Request request);
+
+        public void prepareAvoidCache(Request request);
     }
 
     public static class DefaultCacheListener implements  CacheListener {
@@ -185,6 +192,16 @@ public class CacheDispatcher extends Thread {
         @Override
         public boolean refreshNeeded(Cache.Entry entry, Request request) {
             return entry.refreshNeeded();
+        }
+
+        @Override
+        public boolean avoidCache(Cache.Entry entry, Request request) {
+            return false;
+        }
+
+        @Override
+        public void prepareAvoidCache(Request request) {
+            request.getCacheEntry().ttl = 0;
         }
     }
 }
