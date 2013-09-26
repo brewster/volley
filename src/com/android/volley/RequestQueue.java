@@ -132,6 +132,7 @@ public class RequestQueue {
         stop();  // Make sure any currently running dispatchers are stopped.
         // Create the cache dispatcher and start it.
         mCacheDispatcher = new CacheDispatcher(mCacheQueue, mNetworkQueue, mCache, mDelivery);
+        onCacheDispatcherCreated(mCacheDispatcher);
         mCacheDispatcher.start();
 
         // Create network dispatchers (and corresponding threads) up to the pool size.
@@ -141,6 +142,11 @@ public class RequestQueue {
             mDispatchers[i] = networkDispatcher;
             networkDispatcher.start();
         }
+    }
+
+    // BREWSTER
+    protected void onCacheDispatcherCreated(CacheDispatcher cacheDispatcher) {
+        // Overwrite
     }
 
     /**

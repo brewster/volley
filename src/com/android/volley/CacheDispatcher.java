@@ -49,6 +49,8 @@ public class CacheDispatcher extends Thread {
     /** Used for telling us to die. */
     private volatile boolean mQuit = false;
 
+    private CacheListener mCacheListener;
+
     /**
      * Creates a new cache triage dispatcher thread.  You must call {@link #start()}
      * in order to begin processing.
@@ -65,6 +67,7 @@ public class CacheDispatcher extends Thread {
         mNetworkQueue = networkQueue;
         mCache = cache;
         mDelivery = delivery;
+        mCacheListener = new DefaultCacheListener();
     }
 
     /**
@@ -107,7 +110,7 @@ public class CacheDispatcher extends Thread {
                 }
 
                 // If it is completely expired, just send it to the network.
-                if (entry.isExpired()) {
+                if (mCacheListener.isExpired(entry, request)) {
                     request.addMarker("cache-hit-expired");
                     request.setCacheEntry(entry);
                     mNetworkQueue.put(request);
@@ -120,7 +123,7 @@ public class CacheDispatcher extends Thread {
                         new NetworkResponse(entry.data, entry.responseHeaders));
                 request.addMarker("cache-hit-parsed");
 
-                if (!entry.refreshNeeded()) {
+                if (!mCacheListener.refreshNeeded(entry, request)) {
                     // Completely unexpired cache hit. Just deliver the response.
                     mDelivery.postResponse(request, response);
                 } else {
@@ -132,6 +135,10 @@ public class CacheDispatcher extends Thread {
 
                     // Mark the response as intermediate.
                     response.intermediate = true;
+
+                    if (mCacheListener.avoidCache(entry, request)) {
+                        mCacheListener.prepareAvoidCache(request);
+                    }
 
                     // Post the intermediate response back to the user and have
                     // the delivery then forward the request along to the network.
@@ -154,6 +161,47 @@ public class CacheDispatcher extends Thread {
                 }
                 continue;
             }
+        }
+    }
+
+
+    // BREWSTER
+    public CacheListener getCacheListener() {
+        return mCacheListener;
+    }
+
+    public void setCacheListener(CacheListener cacheListener) {
+        this.mCacheListener = cacheListener;
+    }
+
+    public static interface CacheListener {
+        public boolean isExpired(Cache.Entry entry, Request request);
+        public boolean refreshNeeded(Cache.Entry entry, Request request);
+        public boolean avoidCache(Cache.Entry entry, Request request);
+
+        public void prepareAvoidCache(Request request);
+    }
+
+    public static class DefaultCacheListener implements  CacheListener {
+
+        @Override
+        public boolean isExpired(Cache.Entry entry, Request request) {
+            return entry.isExpired();
+        }
+
+        @Override
+        public boolean refreshNeeded(Cache.Entry entry, Request request) {
+            return entry.refreshNeeded();
+        }
+
+        @Override
+        public boolean avoidCache(Cache.Entry entry, Request request) {
+            return false;
+        }
+
+        @Override
+        public void prepareAvoidCache(Request request) {
+            request.getCacheEntry().ttl = 0;
         }
     }
 }
