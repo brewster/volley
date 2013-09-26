@@ -186,7 +186,7 @@ public class ImageLoader {
     public ImageContainer get(String requestUrl, ImageListener imageListener,
             int maxWidth, int maxHeight) {
         // only fulfill requests that were initiated from the main thread.
-        throwIfNotOnMainThread();
+        // throwIfNotOnMainThread();
 
         final String cacheKey = getCacheKey(requestUrl, maxWidth, maxHeight);
 
